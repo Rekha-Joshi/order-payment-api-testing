@@ -56,14 +56,59 @@ Core flow:
 ### Customers
 Stores customer details.
 
+| Field Name   | Type    | Description              |
+|--------------|--------|--------------------------|
+| id           | int    | Primary key              |
+| name         | string | Customer name            |
+| email        | string | Unique email             |
+| created_at   | datetime | Record creation time   |
+
 ### Products
 Stores product catalog details.
+
+| Field Name   | Type    | Description              |
+|--------------|--------|--------------------------|
+| id           | int    | Primary key              |
+| name         | string | Product name             |
+| price        | float  | Product price            |
+| stock        | int    | Available quantity       |
+| created_at   | datetime | Record creation time   |
 
 ### Orders
 Stores order header details such as customer, status, and total amount.
 
+| Field Name     | Type     | Description                          |
+|----------------|----------|--------------------------------------|
+| id             | int      | Primary key                          |
+| customer_id    | int      | Reference to customers table         |
+| status         | string   | PENDING / PAID / FAILED / CANCELLED  |
+| total_amount   | float    | Total order amount                   |
+| created_at     | datetime | Record creation time                 |
+
 ### Order Items
 Stores products linked to an order, including quantity and item price.
 
+| Field Name   | Type    | Description                          |
+|--------------|--------|--------------------------------------|
+| id           | int    | Primary key                          |
+| order_id     | int    | Reference to orders table            |
+| product_id   | int    | Reference to products table          |
+| quantity     | int    | Number of items                      |
+| price        | float  | Price at time of order               |
+| subtotal     | float  | quantity * price                     |
+
 ### Payments
 Stores payment details linked to an order, including amount and payment status.
+
+| Field Name   | Type    | Description                          |
+|--------------|--------|--------------------------------------|
+| id           | int    | Primary key                          |
+| order_id     | int    | Reference to orders table            |
+| amount       | float  | Payment amount                       |
+| status       | string | SUCCESS / FAILED                     |
+| payment_time | datetime | Time of payment                    |
+
+*** for now: *** 
+1 order -> 1 payment
+payment amount should match order total amount (later maybe)
+failed payment -> order should not be marked PAID
