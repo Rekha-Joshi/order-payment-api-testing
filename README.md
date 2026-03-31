@@ -112,3 +112,21 @@ Stores payment details linked to an order, including amount and payment status.
 1 order -> 1 payment
 payment amount should match order total amount (later maybe)
 failed payment -> order should not be marked PAID
+
+## API Endpoints
+
+### Customers
+- POST /customers → Create a new customer
+- GET /customers/{customer_id} → Get customer details
+
+### Products
+- POST /products → Create a new product
+- GET /products/{product_id} → Get product details
+
+### Orders
+- POST /orders → Create a new order with multiple items
+- GET /orders/{order_id} → Get order details
+
+### Payments
+- POST /payments → Process payment for an order
+- GET /payments/{payment_id} → Get payment details

@@ -1,3 +1,12 @@
-fastapi
+fastapi 
+# is a python framework for buikding APIs.  
+#It uses Pydantic models and python type hints for validation and automatically generates OpenAPI documentation
 uvicorn
+# is the ASGI server that runs the FastAPI application.
+#ASGI - Asynchronous Server Gateway Interface 
+#What Uvicorn actually does
+#	•	listens on port (8000)
+#	•	receives HTTP request
+#	•	passes it to FastAPI
+#	•	sends response back
 email-validator
