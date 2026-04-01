@@ -14,7 +14,7 @@ class ProductCreate(BaseModel):
     stock: int
 
 class OrderItemCreate(BaseModel):
-    order_id: int
+    product_id: int
     quantity: int
 
 class OrderCreate(BaseModel):

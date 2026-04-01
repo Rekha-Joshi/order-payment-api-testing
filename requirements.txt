@@ -10,3 +10,5 @@ uvicorn
 #	•	passes it to FastAPI
 #	•	sends response back
 email-validator
+sqlalchemy #ORM (Object Relational Mapping) for defining tables in Python
+psycopg2-binary #PostgreSQL driver so Python can connect to Postgres
