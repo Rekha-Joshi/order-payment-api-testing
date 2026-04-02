@@ -1,10 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 # Import request validation schemas (Pydantic models)
 from app.schemas import CustomerCreate, ProductCreate, OrderCreate
 
 # Import database engine and models
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app import models
 
 # Create FastAPI app instance
@@ -25,20 +25,42 @@ def read_root():
 # FastAPI validates input using CustomerCreate schema
 @app.post("/customers", status_code=201)
 def create_customer(customer: CustomerCreate):
-    return {
-        "message":"Customer Created",
-        "data": customer
-    }
+    # Open database session
+    with SessionLocal() as db: # earlier db = SessionLocal()
+        # Create Customer ORM object from request data
+        new_customer = models.Customer( #creating new instance of Customer class from models
+            name = customer.name,
+            email = customer.email
+        )
+        # Add and save customer to PostgreSQL
+        db.add(new_customer) #prepare db insert
+        db.commit()
+        db.refresh(new_customer) #reloads object from DB, so that generated field like id and created_at comes back
+        #db.close() #close the connection. Not needed any more as we are using with command now
+        return {
+            "id": new_customer.id,
+            "name": new_customer.name,
+            "email": new_customer.email,
+            "created_at": new_customer.created_at
+        }
 
 # Get customer by ID (path parameter)
-# order_id must be integer, otherwise FastAPI returns 422
+# customer_id must be integer, otherwise FastAPI returns 422
 @app.get("/customers/{customer_id}")
 def get_customer(customer_id:int):
-    return {
-        "customer_id": customer_id,
-        "name": "Sample user",
-        "email": "sample@test.com"
-    }
+    with SessionLocal() as db:
+        customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+        if not customer:
+            raise HTTPException (
+                status_code=404,
+                detail="Customer not found."
+            )
+        return {
+            "id": customer_id,
+            "name": customer.name,
+            "email": customer.email,
+            "created_at": customer.created_at
+        }
 
 # Create a new product
 # Validates price (float) and stock (int)
