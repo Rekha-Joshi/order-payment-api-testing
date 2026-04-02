@@ -1,6 +1,5 @@
 #Schemas define the structure and validation rules for API request and response data.
 #It defines what API expects and ensures that only valid data is accepted.
-
 from pydantic import BaseModel, EmailStr
 from typing import List
 
