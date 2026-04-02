@@ -27,16 +27,19 @@ def read_root():
 def create_customer(customer: CustomerCreate):
     # Open database session
     with SessionLocal() as db: # earlier db = SessionLocal()
+        
         # Create Customer ORM object from request data
         new_customer = models.Customer( #creating new instance of Customer class from models
             name = customer.name,
             email = customer.email
         )
+        
         # Add and save customer to PostgreSQL
         db.add(new_customer) #prepare db insert
         db.commit()
         db.refresh(new_customer) #reloads object from DB, so that generated field like id and created_at comes back
         #db.close() #close the connection. Not needed any more as we are using with command now
+        
         return {
             "id": new_customer.id,
             "name": new_customer.name,
@@ -49,12 +52,14 @@ def create_customer(customer: CustomerCreate):
 @app.get("/customers/{customer_id}")
 def get_customer(customer_id:int):
     with SessionLocal() as db:
+        
         customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
         if not customer:
             raise HTTPException (
                 status_code=404,
                 detail="Customer not found."
             )
+        
         return {
             "id": customer_id,
             "name": customer.name,
@@ -66,20 +71,45 @@ def get_customer(customer_id:int):
 # Validates price (float) and stock (int)
 @app.post("/products", status_code=201)
 def create_product(product: ProductCreate):
-    return {
-        "message": "Product Created",
-        "data": product
-    }
+    with SessionLocal() as db:
+        
+        new_product = models.Product(
+            name = product.name,
+            price = product.price,
+            stock = product.stock
+        )
+
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+        
+        return {
+            "id": new_product.id,
+            "name": new_product.name,
+            "price": new_product.price,
+            "stock": new_product.stock,
+            "created_at": new_product.created_at
+        }
 
 # Get product details by ID
 @app.get("/products/{product_id}")
 def get_product(product_id:int):
-    return {
-        "product_id": product_id,
-        "name": "XYZ",
-        "price": 2.345,
-        "stock": 50
-    }
+    with SessionLocal() as db:
+
+        product = db.query(models.Product).filter(models.Product.id == product_id).first()
+
+        if not product:
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found."
+            )
+        
+        return {
+            "id": product.id,
+            "name": product.name,
+            "price": product.price,
+            "stock": product.stock
+        }
 
 # Create a new order
 # Accepts nested items list (OrderItemCreate inside OrderCreate)
