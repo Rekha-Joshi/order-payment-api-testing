@@ -56,8 +56,8 @@ def get_customer(customer_id:int):
         customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
         if not customer:
             raise HTTPException (
-                status_code=404,
-                detail="Customer not found."
+                status_code = 404,
+                detail = "Customer not found."
             )
         
         return {
@@ -100,8 +100,8 @@ def get_product(product_id:int):
 
         if not product:
             raise HTTPException(
-                status_code=404,
-                detail="Product not found."
+                status_code = 404,
+                detail = "Product not found."
             )
         
         return {
@@ -115,13 +115,14 @@ def get_product(product_id:int):
 # Accepts nested items list (OrderItemCreate inside OrderCreate)
 @app.post("/orders", status_code=201)
 def create_order(order: OrderCreate):
-    return {
-        "message": "Order Created",
-        "order_id": 1,
-        "customer_id": order.customer_id,
-        "total_amount": "PENDING",
-        "items": order.items
-    }
+    with SessionLocal() as db:
+        customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                default = "Customer not found."
+            )
+        
 
 # Get order details with items
 # Combines order (header) + order_items (details)
