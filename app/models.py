@@ -24,6 +24,7 @@ class Product(Base):
 
 # ORM model for order header information
 class Order(Base):
+    
     __tablename__= "orders"
 
     id = Column(Integer, primary_key=True, index=True)

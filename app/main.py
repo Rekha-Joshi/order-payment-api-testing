@@ -1,7 +1,9 @@
+from http.client import HTTP_PORT
+
 from fastapi import FastAPI, HTTPException
 
 # Import request validation schemas (Pydantic models)
-from app.schemas import CustomerCreate, ProductCreate, OrderCreate
+from app.schemas import CustomerCreate, ProductCreate, OrderCreate, OrderItemCreate
 
 # Import database engine and models
 from app.database import engine, Base, SessionLocal
@@ -116,12 +118,34 @@ def get_product(product_id:int):
 @app.post("/orders", status_code=201)
 def create_order(order: OrderCreate):
     with SessionLocal() as db:
+        # Check if customer exists
         customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
-        if not customer:
+        # Return 404 if Customer not found.
+        if not customer: 
             raise HTTPException(
-                status_code=404,
+                status_code = 404,
                 default = "Customer not found."
             )
+        # Check if each product exists and has enough stock
+        for item in order.items:
+            product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
+            # Return 404 if product not found
+            if not product:
+                raise HTTPException(
+                    status_code = 404,
+                    detail = f"Product {item.product_id} not found"
+                )
+            # Return 400 if stock is not enough
+            if product.stock < item.quantity:
+                raise HTTPException(
+                    status_code = 400,
+                    detail = f"Insufficient stock for product {item.product_id}"
+                )
+        return {
+            "message": "Customer, products, and stock validated. Order creation can continue",
+            "customer_id": order.customer_id,
+            "items": order.items
+        }
         
 
 # Get order details with items

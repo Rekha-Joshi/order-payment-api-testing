@@ -8,7 +8,7 @@ class CustomerCreate(BaseModel): #creating a class and it's inherting from BaseM
     email: EmailStr
 
 class ProductCreate(BaseModel):
-    name: str = Field(..., min_length=1) # ... mark this filed required
+    name: str = Field(..., min_length=1) # ... mark this filed as required
     price: float = Field(..., gt=0) #gt grater than
     stock: int = Field(..., ge=0) #ge greater than & equal
 
