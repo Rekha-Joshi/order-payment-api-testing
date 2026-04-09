@@ -118,14 +118,28 @@ def get_product(product_id:int):
 @app.post("/orders", status_code=201)
 def create_order(order: OrderCreate):
     with SessionLocal() as db:
+        # Track total order amount
+        total_amount =0 
         # Check if customer exists
         customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
         # Return 404 if Customer not found.
         if not customer: 
             raise HTTPException(
                 status_code = 404,
-                default = "Customer not found."
+                detail = "Customer not found."
             )
+        # create order header first
+        new_order = models.Order(
+            customer_id = order.customer_id,
+            status = "PENDING",
+            total_amount = 0
+        )
+
+        #save order to DB
+        db.add(new_order)
+        db.commit
+        db.refresh(new_order)
+
         # Check if each product exists and has enough stock
         for item in order.items:
             product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
@@ -141,10 +155,35 @@ def create_order(order: OrderCreate):
                     status_code = 400,
                     detail = f"Insufficient stock for product {item.product_id}"
                 )
+            # Calculate subtotal for this item
+            sub_total = product.price * item.quantity
+
+            #Create order item
+            new_order_item = models.OrderItem(
+                order_id = new_order.id,
+                prouct_id = item.product_id,
+                quantity = item.quantity,
+                price = product.price,
+                subtotal = sub_total
+            )
+            db.add(new_order_item)
+
+            # Add subtotal to running total
+            total_amount += sub_total
+        
+        # Update order header with final total amount
+        new_order.total_amount = total_amount
+
+        # Save order items + updated total
+        db.commit()
+        db.refresh(new_order)
+       
         return {
-            "message": "Customer, products, and stock validated. Order creation can continue",
-            "customer_id": order.customer_id,
-            "items": order.items
+            "message": "Order header created successfully",
+            "order_id": new_order.id,
+            "customer_id": new_order.customer_id,
+            "status": new_order.status,
+            "total_amount": new_order.total_amount
         }
         
 
