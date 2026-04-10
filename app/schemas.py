@@ -23,3 +23,16 @@ class OrderCreate(BaseModel):
 class PaymentCreate(BaseModel):
     order_id: int = Field(..., gt=0)
     amount: float = Field(..., gt=0)
+
+class OrderItemResponse(BaseModel):
+    product_id: int
+    quantity: int
+    price: float
+    subtotal: float
+    
+class OrderResponse(BaseModel):
+    order_id: int
+    customer_id: int
+    status: str
+    total_amount: float
+    items: List[OrderItemResponse]
