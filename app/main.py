@@ -118,8 +118,6 @@ def get_product(product_id:int):
 @app.post("/orders", status_code=201)
 def create_order(order: OrderCreate):
     with SessionLocal() as db:
-        # Track total order amount
-        total_amount =0 
         # Check if customer exists
         customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
         # Return 404 if Customer not found.
@@ -137,8 +135,12 @@ def create_order(order: OrderCreate):
 
         #save order to DB
         db.add(new_order)
-        db.commit
-        db.refresh(new_order)
+        # Flush sends INSERT to DB and gets generated order id
+        # without committing the transaction yet
+        db.flush()
+
+         # Track total order amount
+        total_amount =0
 
         # Check if each product exists and has enough stock
         for item in order.items:
@@ -158,10 +160,13 @@ def create_order(order: OrderCreate):
             # Calculate subtotal for this item
             sub_total = product.price * item.quantity
 
+            #reduce product stock
+            product.stock -= item.quantity
+
             #Create order item
             new_order_item = models.OrderItem(
                 order_id = new_order.id,
-                prouct_id = item.product_id,
+                product_id = item.product_id,
                 quantity = item.quantity,
                 price = product.price,
                 subtotal = sub_total
