@@ -26,4 +26,4 @@ app.include_router(customers.router) #This tells FastAPI that take all endpoints
 
 app.include_router(products.router)
 app.include_router(orders.router)
-#app.include_router(payments.router)
+app.include_router(payments.router)

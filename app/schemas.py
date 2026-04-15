@@ -36,3 +36,9 @@ class OrderResponse(BaseModel):
     status: str
     total_amount: float
     items: List[OrderItemResponse]
+
+class PaymentResponse(BaseModel):
+    payment_id: int
+    order_id: int
+    amount: float
+    status: str

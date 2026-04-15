@@ -5,79 +5,116 @@ from app import models
 
 router = APIRouter()
 
-# # Create a new order
-# # Accepts nested items list (OrderItemCreate inside OrderCreate)
-@router.post("/orders", status_code=201, response_model=OrderResponse)
-def create_order(order: OrderCreate):
-    with SessionLocal() as db:
-        # Check if customer exists
-        customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
-        # Return 404 if Customer not found.
-        if not customer: 
-            raise HTTPException(
-                status_code = 404,
-                detail = "Customer not found."
-            )
-        # create order header first
-        new_order = models.Order(
-            customer_id = order.customer_id,
+def get_customer_or_404(db, customer_id:int):
+    # Check if customer exists
+    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
+    # Return 404 if Customer not found.
+    if not customer: 
+        raise HTTPException(
+            status_code = 404,
+            detail = "Customer not found."
+        )
+    return customer
+
+def get_product_or_404(db, product_id:int):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    # Return 404 if product not found
+    if not product:
+        raise HTTPException(
+            status_code = 404,
+            detail = f"Product {product_id} not found"
+        )
+    return product
+
+def validate_stock(product, quantity:int):
+    #Raise 400 if requested quantity is more than available stock
+    if product.stock < quantity:
+        raise HTTPException(
+            status_code = 400,
+            detail = f"Insufficient stock for product {product.id}"
+        )
+
+def create_order_header(db, customer_id:int):
+    #create order header with temporary total_amount=0
+    new_order = models.Order(
+            customer_id = customer_id,
             status = "PENDING",
             total_amount = 0
         )
+    db.add(new_order) #save order to DB
+    db.flush() # Flush sends INSERT to DB and gets generated order id without committing the transaction yet
+    return new_order
 
-        #save order to DB
-        db.add(new_order)
-        # Flush sends INSERT to DB and gets generated order id
-        # without committing the transaction yet
-        db.flush()
+def create_order_items_and_calculate_total(db, order_id:int, items):
+    # Track total order amount
+    total_amount =0
+    # stored created order items for API response
+    response_items = []
 
-         # Track total order amount
-        total_amount =0
+    # Check if each product exists and has enough stock
+    for item in items:
+        #get product or raise 404
+        product = get_product_or_404(db, item.product_id)
 
-        # stored created order items for API response
-        response_items = []
+        # Return 400 if stock is not enough
+        validate_stock(product, item.quantity)
+        
+        # Calculate subtotal for this item
+        sub_total = product.price * item.quantity
 
-        # Check if each product exists and has enough stock
-        for item in order.items:
-            product = db.query(models.Product).filter(models.Product.id == item.product_id).first()
-            # Return 404 if product not found
-            if not product:
-                raise HTTPException(
-                    status_code = 404,
-                    detail = f"Product {item.product_id} not found"
-                )
-            # Return 400 if stock is not enough
-            if product.stock < item.quantity:
-                raise HTTPException(
-                    status_code = 400,
-                    detail = f"Insufficient stock for product {item.product_id}"
-                )
-            # Calculate subtotal for this item
-            sub_total = product.price * item.quantity
+        # Create order item
+        new_order_item = models.OrderItem(
+            order_id = order_id,
+            product_id = item.product_id,
+            quantity = item.quantity,
+            price = product.price,
+            subtotal = sub_total
+        )
 
-            #reduce product stock
-            product.stock -= item.quantity
+        db.add(new_order_item)
 
-            #Create order item
-            new_order_item = models.OrderItem(
-                order_id = new_order.id,
-                product_id = item.product_id,
-                quantity = item.quantity,
-                price = product.price,
-                subtotal = sub_total
-            )
-            db.add(new_order_item)
+        #Reduce product stock
+        product.stock -= item.quantity
+        
+        # Add subtotal to running total
+        total_amount += sub_total
 
-            # Add subtotal to running total
-            total_amount += sub_total
+        # Build response items
+        response_items.append({
+            "product_id": item.product_id,
+            "quantity": item.quantity,
+            "price": product.price,
+            "subtotal": sub_total
+        })
+    return total_amount, response_items
 
-            #Add item details to response
-            response_items.append({
-                "product_id": item.product_id,
-                "quantity": item.quantity,
-                "price": product.price,
-                "subtotal": sub_total
-            })
+def get_order_or_404(db, order_id:int):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException (
+            status_code = 404,
+            detail = "Order not found."
+        )
+    return order
+
+def get_order_items(db, order):
+    order_items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order.id).all()
+    if not order_items:
+        raise HTTPException(
+            status_code = 404,
+            detail = "No items in this Order."
+        )
+    return order_items
+
+# Accepts nested items list (OrderItemCreate inside OrderCreate)
+@router.post("/orders", status_code=201, response_model=OrderResponse)
+def create_order(order: OrderCreate):
+    with SessionLocal() as db:
+        
+        customer = get_customer_or_404(db, order.customer_id)
+        new_order = create_order_header(db, order.customer_id)
+
+        total_amount , response_items = create_order_items_and_calculate_total(db, new_order.id, order.items)
         
         # Update order header with final total amount
         new_order.total_amount = total_amount
@@ -97,25 +134,26 @@ def create_order(order: OrderCreate):
 
 # Get order details with items
 # Combines order (header) + order_items (details)
-@router.get("/orders/{order_id}")
-def get_order(order_id: int):
-    return {
-        "order_id": order_id,
-        "customer_id": 1,
-        "status": "PENDING",
-        "total_amount": 250.0,
-        "items": [
+@router.get("/orders/{order_id}", response_model=OrderResponse)
+def read_order(order_id: int):
+    with SessionLocal() as db:
+        order = get_order_or_404(db, order_id)
+
+        # Fetch order items and format for response
+        order_items = get_order_items(db, order)
+        response_items = [
             {
-                "product_id": 1,
-                "quantity": 2,
-                "price": 100.0,
-                "subtotal": 200.0
-            },
-            {
-                "product_id": 2,
-                "quantity": 1,
-                "price": 50.0,
-                "subtotal": 50.0
-            }
+                "product_id": item.product_id,
+                "quantity": item.quantity,
+                "price": item.price,
+                "subtotal": item.subtotal
+            } for item in order_items
         ]
-    }
+        return {
+            "order_id": order.id,
+            "customer_id": order.customer_id,
+            "status": order.status,
+            "total_amount": order.total_amount,
+            "items": response_items
+        }
+
