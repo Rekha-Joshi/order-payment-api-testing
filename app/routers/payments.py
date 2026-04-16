@@ -5,7 +5,7 @@ from app import models
 
 router = APIRouter()
 
-def get_order_or_404(db, order_id):
+def get_order_or_404(db, order_id:int):
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
         raise HTTPException(
@@ -14,10 +14,10 @@ def get_order_or_404(db, order_id):
         )
     return order
 
-def validate_order_state(status):
+def validate_order_state(status: str):
     return status in ["PENDING", "FAILED"]
 
-def get_payment_or_404(db, payment_id):
+def get_payment_or_404(db, payment_id:int):
     payment = db.query(models.Payment).filter(models.Payment.id == payment_id).first()
     if not payment:
         raise HTTPException(
