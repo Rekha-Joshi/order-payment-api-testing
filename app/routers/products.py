@@ -30,7 +30,7 @@ def create_product(product: ProductCreate):
 
 # Get product details by ID
 @router.get("/products/{product_id}")
-def get_product(product_id:int):
+def read_product(product_id:int):
     with SessionLocal() as db:
 
         product = db.query(models.Product).filter(models.Product.id == product_id).first()

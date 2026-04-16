@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas import PaymentCreate
+from app.schemas import PaymentCreate, PaymentResponse
 from app.database import SessionLocal
 from app import models
 
@@ -65,7 +65,7 @@ def create_payment(payment: PaymentCreate):
             "status": new_payment.status
         }
 
-@router.get("/payments/{payment_id}")
+@router.get("/payments/{payment_id}", response_model = PaymentResponse)
 def read_payment(payment_id: int):
     with SessionLocal() as db:
         payment = get_payment_or_404(db, payment_id)

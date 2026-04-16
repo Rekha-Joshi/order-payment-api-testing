@@ -35,7 +35,7 @@ def create_customer(customer: CustomerCreate):
 # Get customer by ID (path parameter)
 # customer_id must be integer, otherwise FastAPI returns 422
 @router.get("/customers/{customer_id}")
-def get_customer(customer_id:int):
+def read_customer(customer_id:int):
     with SessionLocal() as db:
         
         customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
