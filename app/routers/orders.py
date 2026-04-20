@@ -106,7 +106,7 @@ def get_order_items(db, order):
         )
     return order_items
 
-def check_order_status(status: str):
+def validate_cancel_order_status(status: str):
     if status == "pending":
         return True 
     elif status == "completed":
@@ -176,14 +176,24 @@ def read_order(order_id: int):
             "items": response_items
         }
 
-@router.patch("/orders/{Order_id}/cancel")
+@router.patch("/orders/{order_id}/cancel")
 def updated_order(order_id: int):
     with SessionLocal() as db:
-        order = get_order_or_404(order_id)
-        if check_order_status(order.status):
+        order = get_order_or_404(db, order_id)
+        if validate_cancel_order_status(order.status):
             # allow cancel. Get all the items of this order
             items = get_order_items(db, order)
 
             # once we have all items, go through them to get product_id and update the stock
             for item in items:
-                
+                product = get_product_or_404(db, item.product_id)
+                product.stock += item.quantity
+            order.status = "cancelled"
+        db.commit()
+        db.refresh(order)
+        return {
+            "order_id": order_id,
+            "customer_id": order.customer_id,
+            "status": order.status,
+            "total_amount": order.total_amount
+        }
