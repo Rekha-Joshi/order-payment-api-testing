@@ -15,7 +15,7 @@ def get_order_or_404(db, order_id:int):
     return order
 
 def validate_order_state(status: str):
-    return status in ["PENDING", "FAILED"]
+    return status == "pending"
 
 def get_payment_or_404(db, payment_id:int):
     payment = db.query(models.Payment).filter(models.Payment.id == payment_id).first()
@@ -39,22 +39,22 @@ def create_payment(payment: PaymentCreate):
                 new_payment = models.Payment(
                     order_id = payment.order_id,
                     amount = payment.amount,
-                    status = "SUCCESS"
+                    status = "paid"
                 )
                 db.add(new_payment)
-                order.status = "PAID"
+                order.status = "completed"
             else:
                 new_payment = models.Payment(
                     order_id = payment.order_id,
                     amount = payment.amount,
-                    status = "FAILED"
+                    status = "failed"
                 )
                 db.add(new_payment)
-                order.status = "FAILED"
+                order.status = "pending"
         else:
             raise HTTPException(
                 status_code = 400,
-                detail = "Order is either already paid or cancelled."
+                detail = "Order is either already completed or cancelled."
             )
         db.commit()
         db.refresh(new_payment)

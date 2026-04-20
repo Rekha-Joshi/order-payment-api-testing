@@ -38,7 +38,7 @@ def create_order_header(db, customer_id:int):
     #create order header with temporary total_amount=0
     new_order = models.Order(
             customer_id = customer_id,
-            status = "PENDING",
+            status = "pending",
             total_amount = 0
         )
     db.add(new_order) #save order to DB
@@ -106,6 +106,25 @@ def get_order_items(db, order):
         )
     return order_items
 
+def check_order_status(status: str):
+    if status == "pending":
+        return True 
+    elif status == "completed":
+        raise HTTPException(
+            status_code = 400,
+            detail = "Order is already completed and can't be cancelled."
+        )
+    elif status == "cancelled":
+        raise HTTPException(
+            status_code = 400,
+            detail = "Order is already cancelled."
+        )
+    else:
+        raise HTTPException(
+            status_code = 400,
+            detail = "Invalid order status."
+        )
+
 # Accepts nested items list (OrderItemCreate inside OrderCreate)
 @router.post("/orders", status_code=201, response_model=OrderResponse)
 def create_order(order: OrderCreate):
@@ -157,3 +176,14 @@ def read_order(order_id: int):
             "items": response_items
         }
 
+@router.patch("/orders/{Order_id}/cancel")
+def updated_order(order_id: int):
+    with SessionLocal() as db:
+        order = get_order_or_404(order_id)
+        if check_order_status(order.status):
+            # allow cancel. Get all the items of this order
+            items = get_order_items(db, order)
+
+            # once we have all items, go through them to get product_id and update the stock
+            for item in items:
+                
