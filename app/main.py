@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
 # Import request validation schemas (Pydantic models)
 from app.routers import customers, products, orders, payments

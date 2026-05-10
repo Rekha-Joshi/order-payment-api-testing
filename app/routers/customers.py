@@ -16,11 +16,11 @@ def get_customer_or_404(db, customer_id:int):
         )
     return customer
 
-def get_orders_or_404(db, customer_id:int):
+def get_orders(db, customer_id:int):
     orders = db.query(models.Order).filter(models.Order.customer_id == customer_id).all()
     if not orders:
         raise HTTPException(
-            status_code = 404,
+            status_code = 200,
             detail = f"No orders for customer: {customer_id}."
         )
     return orders
@@ -41,6 +41,12 @@ def create_customer(customer: CustomerCreate):
     # Open database session
     with SessionLocal() as db: # earlier db = SessionLocal()
         
+        existing_customer = db.query(models.Customer).filter(models.Customer.email == customer.email).first()
+        if existing_customer:
+            raise HTTPException(
+                status_code = 409,
+                detail = "Customer email already exists."
+            )
         # Create Customer ORM object from request data
         new_customer = models.Customer( #creating new instance of Customer class from models
             name = customer.name,
@@ -78,7 +84,7 @@ def read_customer(customer_id:int):
 def read_customer_order(customer_id: int):
     with SessionLocal() as db:
         get_customer_or_404(db, customer_id)
-        orders = get_orders_or_404(db, customer_id)       
+        orders = get_orders(db, customer_id)       
         customer_orders = []
 
         for order in orders:
