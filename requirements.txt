@@ -1,5 +1,5 @@
 fastapi 
-# is a python framework for buikding APIs.  
+# is a python framework for building APIs.  
 #It uses Pydantic models and python type hints for validation and automatically generates OpenAPI documentation
 uvicorn
 # is the ASGI server that runs the FastAPI application.

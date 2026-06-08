@@ -130,3 +130,33 @@ failed payment -> order should not be marked PAID
 ### Payments
 - POST /payments → Process payment for an order
 - GET /payments/{payment_id} → Get payment details
+
+## Tools Summary
+
+| Tool | Used For | Why |
+
+|---|---|---|
+
+| FastAPI | Build API | Controlled backend project |
+
+| PostgreSQL | Database | Real DB validation |
+
+| SQLAlchemy | DB connection | Backend ORM |
+
+| Pydantic | Request validation | Clean API validation |
+
+| Uvicorn | Run API | Local server |
+
+| TablePlus | DB UI | Easy SQL checks |
+
+| Postman | API testing | Manual API validation |
+
+| Newman | CLI test run | Reporting + CI-ready |
+
+| JMeter | Load testing | Basic performance testing |
+
+| GitHub | Portfolio | Recruiter visibility |
+
+| VS Code | Coding | Main editor |
+
+| iTerm2 | Terminal work | Commands and CLI tools |
