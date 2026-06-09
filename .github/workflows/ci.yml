@@ -1,15 +1,27 @@
-name: First GitHub Action
+name: First GitHub Action #workflow name which is published in github
 
 on:
-  push:
+  push: #This is the trigger
 
 jobs:
-  first-check:
-    runs-on: ubuntu-latest
+  first-check: # this is just the job name. Could be anything. Different jobs can run independently.
+    runs-on: ubuntu-latest #this tells github to create ubuntu vm for this job.
 
-    steps:
-      - name: Get project code
-        uses: actions/checkout@v4
+    steps: # inside this job we execute these steps one by one
+      - name: Get project code #just a friendly name
+        uses: actions/checkout@v4 #Use a prebuilt GitHub Action called checkout V4. Github automatically downloads the repository that triggered the workflow.
+        #Use the checkout action to download my repository into the VM.
 
-      - name: Say hello
-        run: echo "Hello QA - GitHub Actions is working"
+      - name: Say Hello # 
+        run: echo "Hello QA - GitHub Actions is working" #Execute this shell command inside the VM.
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Verify Python
+        run: python --version
+        
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
