@@ -1729,10 +1729,10 @@
       ]
     },
     {
-      "name": "07 - End to End Chained Flow",
+      "name": "07 - Newman E2E Positive Flow",
       "item": [
         {
-          "name": "GET - Root Health Check Copy",
+          "name": "GET - Root Health Check",
           "event": [
             {
               "listen": "test",
@@ -1779,7 +1779,7 @@
           "response": []
         },
         {
-          "name": "POST - Create Customer Copy",
+          "name": "POST - Create Customer",
           "event": [
             {
               "listen": "test",
@@ -1841,7 +1841,7 @@
           "response": []
         },
         {
-          "name": "POST - Create Product Copy",
+          "name": "POST - Create Product",
           "event": [
             {
               "listen": "test",
@@ -1909,7 +1909,7 @@
           "response": []
         },
         {
-          "name": "POST - Create Order Copy",
+          "name": "POST - Create Order",
           "event": [
             {
               "listen": "test",
@@ -1990,7 +1990,7 @@
           "response": []
         },
         {
-          "name": "GET - Get Order By ID Copy",
+          "name": "GET - Get Order By ID",
           "event": [
             {
               "listen": "test",
@@ -2043,7 +2043,7 @@
           "response": []
         },
         {
-          "name": "POST - Create Successful Payment Copy",
+          "name": "POST - Create Successful Payment",
           "event": [
             {
               "listen": "test",
@@ -2107,7 +2107,7 @@
           "response": []
         },
         {
-          "name": "GET - Get Payment By ID Copy",
+          "name": "GET - Get Payment By ID",
           "event": [
             {
               "listen": "test",
@@ -2164,7 +2164,7 @@
           "response": []
         },
         {
-          "name": "GET - Get Order By ID Copy 2",
+          "name": "GET - Get Order By ID",
           "event": [
             {
               "listen": "test",
@@ -2217,7 +2217,7 @@
           "response": []
         },
         {
-          "name": "GET - Get Product By ID Copy",
+          "name": "GET - Get Product By ID",
           "event": [
             {
               "listen": "test",
@@ -2263,6 +2263,307 @@
               ]
             },
             "description": "## GET - Get Product By ID\n\nPurpose:\n\nRetrieve product details using product ID.\n\nChecks:\n\n- Existing product returns data\n\n- Product fields correct\n\n- Missing product returns error\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Newman E2E Negative Flow",
+      "item": [
+        {
+          "name": "POST - Create Customer for Negative Flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "const jsonData = pm.response.json();",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "})",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.response.to.have.responseTime.below(1000);",
+                  "})",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json",
+                  "})",
+                  "pm.test(\"Customer ID generated\",()=> {",
+                  "\tpm.expect(jsonData.id).to.be.not.null;",
+                  "\tpm.expect(jsonData.id).to.be.a(\"number\");",
+                  "})",
+                  "pm.test(\"Customer name is correct\",()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "})",
+                  "pm.test(\"Customer email is correct\",()=> {",
+                  "\tpm.expect(jsonData.email).to.eql(requestBody.email);",
+                  "})",
+                  "pm.environment.set(\"negative_customer_id\", jsonData.id);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Negative Flow Customer {{$timestamp}}\",\n  \"email\": \"negative.flow.{{$timestamp}}@test.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "## POST - Create Customer\n\nPurpose:\n\nCreate a new customer record required for order placement.\n\nChecks:\n\n- Customer created successfully\n\n- Status code is 201\n\n- Unique customer ID generated\n\n- Name and email saved correctly\n\n- Response JSON structure valid\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Product for Negative Flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw)",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"name\");",
+                  "\tpm.expect(jsonData).to.have.property(\"price\");",
+                  "\tpm.expect(jsonData).to.have.property(\"stock\");",
+                  "\tpm.expect(jsonData).to.have.property(\"created_at\");",
+                  "});",
+                  "pm.test(\"Product data is correct\", ()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "\tpm.expect(jsonData.price).to.eql(requestBody.price);",
+                  "\tpm.expect(jsonData.stock).to.eql(requestBody.stock);",
+                  "});",
+                  "",
+                  "pm.environment.set(\"negative_product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Negative Flow Product {{$timestamp}}\",\n  \"price\": 25.50,\n  \"stock\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "## POST - Create Product\n\nPurpose:\n\nCreate a product available for ordering.\n\nChecks:\n\n- Product created successfully\n\n- Status code is 201\n\n- Product ID generated\n\n- Price and stock stored correctly\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order - Invalid Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Customer not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 999999,\n  \"items\": [\n    {\n      \"product_id\": {{negative_product_id}},\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Invalid Customer ID\n\nPurpose:\n\nVerify order creation fails for missing customer.\n\nChecks:\n\n- Correct error returned\n\n- No order created\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order - Invalid Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.eql(`Product ${requestBody.items[0].product_id} not found`)",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{negative_customer_id}},\n  \"items\": [\n    {\n      \"product_id\": 999999,\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Invalid Product ID\n\nPurpose:\n\nVerify order creation fails for invalid product.\n\nChecks:\n\n- Correct error returned\n\n- No order created\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order - Insufficient Stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.eql(`Insufficient stock for product ${requestBody.items[0].product_id}`)",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Order Quantity More Than Stock\n{\n  \"customer_id\": {{negative_customer_id}},\n  \"items\": [\n    {\n      \"product_id\": {{negative_product_id}},\n      \"quantity\": 9999\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Quantity More Than Stock\n\nPurpose:\n\nVerify order creation fails when quantity exceeds stock.\n\nChecks:\n\n- Stock validation works\n\n- No invalid order created\n\nExpected:\n\n400 / 409"
           },
           "response": []
         }
