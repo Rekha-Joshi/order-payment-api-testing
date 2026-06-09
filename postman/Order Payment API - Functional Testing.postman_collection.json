@@ -1,0 +1,2278 @@
+{
+  "info": {
+    "_postman_id": "43f957d7-1d4f-403f-9429-fee48902d6dd",
+    "name": "Order Payment API - Functional Testing",
+    "description": "Functional API testing collection for the Order Payment API project.\n\nThis collection covers core backend QA scenarios including customer creation, product creation, order placement, payment processing, order cancellation, negative validation, and database verification.\n\nTesting focus:\n\n- API status codes\n    \n- JSON response validation\n    \n- Business rule validation\n    \n- Order and payment status flow\n    \n- Database consistency checks\n    \n- Error handling for invalid inputs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "13702779"
+  },
+  "item": [
+    {
+      "name": "01 - API Health Check",
+      "item": [
+        {
+          "name": "GET - Root Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", () => {",
+                  "\tpm.response.to.have.responseTime.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData=pm.response.json();\t",
+                  "}",
+                  "pm.test(\"Response body is not empty\", () => {",
+                  "\tpm.expect(pm.response.text()).to.not.be.empty;",
+                  "})",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "## GET - Root Health Check\n\nPurpose:\n\nVerify API server is running and reachable.\n\nChecks:\n\n- Endpoint responds successfully\n\n- Status code is 200\n\n- Response body returned\n\n- Acceptable response time\n\nExpected:\n\n200 OK"
+          },
+          "response": []
+        }
+      ],
+      "description": "## GET - Root Health Check\n\nPurpose:\n\nVerify API server is running and reachable.\n\nChecks:\n\n- Endpoint responds successfully\n\n- Status code is 200\n\n- Response body returned\n\n- Acceptable response time\n\nExpected:\n\n200 OK\n"
+    },
+    {
+      "name": "02 - Customers",
+      "item": [
+        {
+          "name": "POST - Create Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "const jsonData = pm.response.json();",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "})",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.response.to.have.responseTime.below(1000);",
+                  "})",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json",
+                  "})",
+                  "pm.test(\"Customer ID generated\",()=> {",
+                  "\tpm.expect(jsonData.id).to.be.not.null;",
+                  "\tpm.expect(jsonData.id).to.be.a(\"number\");",
+                  "})",
+                  "pm.test(\"Customer name is correct\",()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "})",
+                  "pm.test(\"Customer email is correct\",()=> {",
+                  "\tpm.expect(jsonData.email).to.eql(requestBody.email);",
+                  "})",
+                  "pm.environment.set(\"customer_id\", jsonData.id);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Gopal Datt joshi\",\n\t\"email\": \"gdjoshi@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "## POST - Create Customer\n\nPurpose:\n\nCreate a new customer record required for order placement.\n\nChecks:\n\n- Customer created successfully\n\n- Status code is 201\n\n- Unique customer ID generated\n\n- Name and email saved correctly\n\n- Response JSON structure valid\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Customer By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "pm.test(\"Status code is either 200 or 404\", ()=> {",
+                  "\tpm.expect(status).to.be.oneOf([200, 404]);",
+                  "});",
+                  "if (status == 200) {",
+                  "\t",
+                  "\tpm.test(\"Response has properties: id, name, email and created_at\",()=>{",
+                  "\t\tpm.expect(jsonData).to.have.property('id');",
+                  "\t\tpm.expect(jsonData).to.have.property('name');",
+                  "\t\tpm.expect(jsonData).to.have.property('email');",
+                  "\t\tpm.expect(jsonData).to.have.property('created_at');",
+                  "\t});",
+                  "} else if (status == 404) {",
+                  "\tpm.test(\"Not found message returned\", ()=> {",
+                  "\t\tpm.expect(jsonData.detail).to.eql(\"Customer not found.\");",
+                  "\t})",
+                  "}",
+                  "pm.test(\"Response time is less than 1000ms\", ()=>{",
+                  "\tpm.response.to.have.responseTime.to.below(1000);",
+                  "});",
+                  "pm.test(\"Response data is not empty\", ()=> {",
+                  "\tpm.expect(jsonData).to.be.not.empty;",
+                  "});",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Saisha Pattanayak\",\n\t\"email\": \"saisha.pattanayak@gmail.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "50"
+              ]
+            },
+            "description": "## GET - Get Customer By ID\n\nPurpose:\n\nRetrieve customer details using customer ID.\n\nChecks:\n\n- Existing customer returns data\n\n- Correct customer fields returned\n\n- Missing customer returns proper error\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Customer Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "pm.test(\"Status to be either 200, 404\", ()=> {",
+                  "\tpm.expect(status).to.be.oneOf([200, 404]);",
+                  "});",
+                  "pm.test(\"Response time is below 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);\t",
+                  "});",
+                  "if (status == 200) {",
+                  "\tif (Array.isArray(jsonData)){",
+                  "\t\tpm.test(\"Response Data should have at least one order\", ()=> {",
+                  "\t\t\tpm.expect(jsonData.length).to.be.at.least(1);",
+                  "\t\t});",
+                  "\t\tpm.test(\"Response Data have all the correct properties: customer_id, order_id, status, total_amount,items\", ()=> {",
+                  "\t\t\tjsonData.forEach (order => {",
+                  "\t\t\t\tpm.expect(order).to.have.property(\"customer_id\");",
+                  "\t\t\t\tpm.expect(order).to.have.property(\"order_id\");",
+                  "\t\t\t\tpm.expect(order).to.have.property(\"status\");",
+                  "\t\t\t\tpm.expect(order).to.have.property(\"total_amount\");",
+                  "\t\t\t\tpm.expect(order).to.have.property(\"items\");",
+                  "",
+                  "\t\t\t\tpm.expect(order.items).to.be.an(\"array\");",
+                  "\t\t\t\torder.items.forEach(item => {",
+                  "\t\t\t\t\tpm.expect(item).to.have.property(\"product_id\");",
+                  "\t\t\t\t\tpm.expect(item).to.have.property(\"quantity\");",
+                  "\t\t\t\t\tpm.expect(item).to.have.property(\"price\");",
+                  "\t\t\t\t\tpm.expect(item).to.have.property(\"subtotal\");",
+                  "\t\t\t\t});",
+                  "\t\t\t});",
+                  "\t\t});",
+                  "\t} else{",
+                  "\t\tpm.test(\"No order message returned\", ()=> {",
+                  "\t\t\tpm.expect(jsonData).to.have.property(\"detail\");",
+                  "\t\t\tpm.expect(jsonData.detail).to.include(\"No orders for customer: \");",
+                  "\t\t});",
+                  "\t}",
+                  "} else if (status == 404){",
+                  "\tpm.test(\"Response has correct detail message\", () => {",
+                  "\t\tpm.expect(jsonData).to.have.property(\"detail\");",
+                  "\t\tpm.expect(jsonData.detail).to.eql(\"Customer not found.\");",
+                  "\t});",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Saisha Pattanayak\",\n\t\"email\": \"saisha.pattanayak@gmail.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/11/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "11",
+                "orders"
+              ]
+            },
+            "description": "## GET - Get Customer Orders\n\nPurpose:\n\nRetrieve all orders linked to a customer.\n\nChecks:\n\n- Orders returned for valid customer\n\n- Empty list or no orders handled correctly\n\n- Missing customer handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Products",
+      "item": [
+        {
+          "name": "POST - Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw)",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"name\");",
+                  "\tpm.expect(jsonData).to.have.property(\"price\");",
+                  "\tpm.expect(jsonData).to.have.property(\"stock\");",
+                  "\tpm.expect(jsonData).to.have.property(\"created_at\");",
+                  "});",
+                  "pm.test(\"Product data is correct\", ()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "\tpm.expect(jsonData.price).to.eql(requestBody.price);",
+                  "\tpm.expect(jsonData.stock).to.eql(requestBody.stock);",
+                  "});",
+                  "pm.environment.set(\"product_id\", jsonData.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"High End Carbon Frame\",\n  \"price\": 2999.99,\n  \"stock\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "## POST - Create Product\n\nPurpose:\n\nCreate a product available for ordering.\n\nChecks:\n\n- Product created successfully\n\n- Status code is 201\n\n- Product ID generated\n\n- Price and stock stored correctly\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Product By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\",()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", () => {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property('id');",
+                  "\tpm.expect(jsonData).to.have.property('name');",
+                  "\tpm.expect(jsonData).to.have.property('price');",
+                  "\tpm.expect(jsonData).to.have.property('stock');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "1"
+              ]
+            },
+            "description": "## GET - Get Product By ID\n\nPurpose:\n\nRetrieve product details using product ID.\n\nChecks:\n\n- Existing product returns data\n\n- Product fields correct\n\n- Missing product returns error\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Orders",
+      "item": [
+        {
+          "name": "POST - Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw)",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Order created successfully with all required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"customer_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData).to.have.property(\"total_amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"items\");",
+                  "\tpm.expect(jsonData.items).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Order id is created and is a number\", ()=> {",
+                  "\tpm.expect(jsonData.order_id).to.be.not.null;",
+                  "\tpm.expect(jsonData.order_id).to.be.a(\"number\");",
+                  "});",
+                  "pm.test(\"Customer id is correct\", ()=> {",
+                  "\tpm.expect(jsonData.customer_id).to.eql(requestBody.customer_id)",
+                  "});",
+                  "pm.test(\"Order status is pending\", ()=> {",
+                  "\tpm.expect(jsonData.status).to.eql(\"pending\");",
+                  "});",
+                  "pm.test(\"Total amount is calculated correctly\", ()=> {",
+                  "\tlet total=0;",
+                  "\tjsonData.items.forEach(item => {",
+                  "\t\tlet subtotal = item.quantity * item.price;",
+                  "\t\ttotal += item.subtotal;",
+                  "\t});",
+                  "\tpm.expect(total).to.eql(jsonData.total_amount);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 57,\n  \"items\": [\n    {\n      \"product_id\": 21,\n      \"quantity\": 4\n    },\n    {\n      \"product_id\": 18,\n      \"quantity\": 5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order\n\nPurpose:\n\nCreate customer order with one or more items.\n\nChecks:\n\n- Order created successfully\n\n- Order items created\n\n- Total amount calculated correctly\n\n- Stock reduced correctly\n\n- Order status correct\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Order By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is below 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"customer_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData).to.have.property(\"total_amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"items\");",
+                  "\tpm.expect(jsonData.items).to.be.an(\"array\");",
+                  "\tpm.expect(jsonData.items.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "5"
+              ]
+            },
+            "description": "## GET - Get Order By ID\n\nPurpose:\n\nRetrieve complete order details.\n\nChecks:\n\n- Order header returned\n\n- Items list returned\n\n- Total amount matches order data\n\n- Missing order handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Cancel Pending Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Order status is cancelled\", () => {",
+                  "\tpm.expect(jsonData.status).to.eql(\"cancelled\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/102/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "102",
+                "cancel"
+              ]
+            },
+            "description": "## PATCH - Cancel Pending Order\n\nPurpose:\n\nCancel an order that is still pending.\n\nChecks:\n\n- Pending order cancelled successfully\n\n- Status updated to cancelled\n\n- Correct success response returned\n\nExpected:\n\n200 OK"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Cancel Completed Order - Negative",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response detail is 'Order is already completed and can't be ...'\", () => {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Order is already completed and can't be cancelled.\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/99/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "99",
+                "cancel"
+              ]
+            },
+            "description": "## PATCH - Cancel Completed Order - Negative\n\nPurpose:\n\nVerify completed orders cannot be cancelled.\n\nChecks:\n\n- Cancellation blocked\n\n- Correct business rule message returned\n\nExpected:\n\n400 / 409 (based on implementation)"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Cancel Already Cancelled Order - Negative",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Response status is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400);",
+                  "});\t",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response body contains 'Order is already cancelled'\", () => {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Order is already cancelled\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/72/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "72",
+                "cancel"
+              ]
+            },
+            "description": "## PATCH - Cancel Already Cancelled Order - Negative\n\nPurpose:\n\nVerify cancelled order cannot be cancelled again.\n\nChecks:\n\n- Repeat cancellation blocked\n\n- Correct error returned\n\nExpected:\n\n400 / 409"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Payments",
+      "item": [
+        {
+          "name": "POST - Create Successful Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"payment_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData.status).to.eql(\"paid\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 9,\n  \"amount\": 14921.72\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Create Successful Payment\n\nPurpose:\n\nProcess payment for valid pending order.\n\nChecks:\n\n- Payment created successfully\n\n- Payment status marked paid\n\n- Order marked completed\n\n- Amount matches order total\n\nExpected:\n\n201 Created / 200 OK"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Failed Payment - Wrong Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"payment_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData.status).to.eql(\"failed\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"order_id\": 107,\n\t\"amount\": 9000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Create Failed Payment - Wrong Amount\n\nPurpose:\n\nVerify wrong payment amount is rejected.\n\nChecks:\n\n- Payment failure handled correctly\n\n- Order not marked completed\n\n- Correct error returned\n\nExpected:\n\n400 / 409"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Pay Completed Order - Negative",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response detail has correct error message\", ()=> {",
+                  "\tpm.expect(jsonData.detail).includes(\"Order is either already completed or cancelled.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"order_id\": 103,\n\t\"amount\": 11729.1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Pay Completed Order - Negative\n\nPurpose:\n\nVerify already paid/completed order cannot be paid again.\n\nChecks:\n\n- Duplicate payment blocked\n\n- Correct business rule error returned\n\nExpected:\n\n400 / 409"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Pay Cancelled Order - Negative",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response detail has correct error message\", ()=> {",
+                  "\tpm.expect(jsonData.detail).includes(\"Order is either already completed or cancelled.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"order_id\": 102,\n\t\"amount\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Pay Cancelled Order - Negative\n\nPurpose:\n\nVerify cancelled order cannot be paid.\n\nChecks:\n\n- Payment blocked\n    \n- Correct error returned\n    \n\nExpected:\n\n400 / 409"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Payment By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"payment_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"order_id\": 107,\n\t\"amount\": 9000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/51",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "51"
+              ]
+            },
+            "description": "## GET - Get Payment By ID\n\nPurpose:\n\nRetrieve payment details by payment ID.\n\nChecks:\n\n- Existing payment returned\n\n- Correct fields returned\n\n- Missing payment handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Negative Validation Tests",
+      "item": [
+        {
+          "name": "POST - Create Customer Duplicate Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// BUG FOUND EARLIER:",
+                  "// Duplicate customer email was returning 500 Internal Server Error.",
+                  "// Fixed in API code by adding pre-insert duplicate email check.",
+                  "// Expected status now = 409 Conflict.",
+                  "//pm.test(\"BUG: Duplicate email should return 409, but currently returns 500\", function () {",
+                  "//    pm.response.to.have.status(409);",
+                  "//});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "pm.test(\"Status code is 409\", ()=> {",
+                  "\tpm.response.to.have.status(409);",
+                  "})",
+                  "pm.test(\"Response body contains 'Customer email already exists.'\", () => {",
+                  "\tpm.expect(jsonData.detail).to.eql(\"Customer email already exists.\");",
+                  "})"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Saisha Pattanayak\",\n\t\"email\": \"saisha.pattanayak@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "Validates duplicate email handling.\n\nRegression test for previously found defect:  \nDuplicate customer email incorrectly returned 500.  \nNow expected behavior is 409 Conflict."
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Customer Invalid Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422\", ()=> {",
+                  "\tpm.response.to.have.status(422);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Error message is correct\", () => {",
+                  "\tpm.expect(jsonData.detail[0].msg).to.includes(\"value is not a valid email address:\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Sanjay Dixit\",\n\t\"email\": \"sdixit.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "## POST - Create Customer Invalid Email\n\nPurpose:\n\nVerify invalid email format is rejected.\n\nChecks:\n\n- Validation error returned\n\n- Customer not created\n\nExpected:\n\n422 Unprocessable Entity"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Product Negative Price",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422\", ()=> {",
+                  "\tpm.response.to.have.status(422); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail[0].loc[1]).to.eql(\"price\");",
+                  "\tpm.expect(jsonData.detail[0].msg).to.includes(\"Input should be greater than 0\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Price Product\",\n  \"price\": -50,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "## POST - Create Product Negative Price\n\nPurpose:\n\nVerify negative price is rejected.\n\nChecks:\n\n- Validation/business rule triggered\n    \n- Product not created\n    \n\nExpected:\n\n400 / 422"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Product Negative Stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422\", ()=> {",
+                  "\tpm.response.to.have.status(422); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail[0].loc[1]).to.eql(\"stock\");",
+                  "\tpm.expect(jsonData.detail[0].msg).to.includes(\"Input should be greater than or equal to 0\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Stock Product\",\n  \"price\": 99.99,\n  \"stock\": -5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "## POST - Create Product Negative Stock\n\nPurpose:\n\nVerify negative stock quantity is rejected.\n\nChecks:\n\n- Validation error returned\n\n- Product not created\n\nExpected:\n\n400 / 422"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order Invalid Customer ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Customer not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 999999,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Invalid Customer ID\n\nPurpose:\n\nVerify order creation fails for missing customer.\n\nChecks:\n\n- Correct error returned\n\n- No order created\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order Invalid Product ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.eql(`Product ${requestBody.items[0].product_id} not found`)",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Order Invalid Product ID\n{\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"product_id\": 999999,\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Invalid Product ID\n\nPurpose:\n\nVerify order creation fails for invalid product.\n\nChecks:\n\n- Correct error returned\n\n- No order created\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order Quantity More Than Stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 400\", ()=> {",
+                  "\tpm.response.to.have.status(400); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.eql(`Insufficient stock for product ${requestBody.items[0].product_id}`)",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Order Quantity More Than Stock\n{\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 9999\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Quantity More Than Stock\n\nPurpose:\n\nVerify order creation fails when quantity exceeds stock.\n\nChecks:\n\n- Stock validation works\n\n- No invalid order created\n\nExpected:\n\n400 / 409"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order Empty Items List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422\", ()=> {",
+                  "\tpm.response.to.have.status(422); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail[0].msg).to.include(\"List should have at least 1 item\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Order Empty Items List\n{\n  \"customer_id\": 1,\n  \"items\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order Empty Items List\n\nPurpose:\n\nVerify order cannot be created without items.\n\nChecks:\n\n- Validation error returned\n\nExpected:\n\n400 / 422"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Payment Invalid Order ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Order not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Payment Invalid Order ID\n{\n  \"order_id\": 999999,\n  \"amount\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Create Payment Invalid Order ID\n\nPurpose:\n\nVerify payment fails for non-existing order.\n\nChecks:\n\n- Correct error returned\n\n- No payment created\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Payment Zero Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 422\", ()=> {",
+                  "\tpm.response.to.have.status(422); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail[0].msg).to.includes(\"Input should be greater than 0\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "//POST - Create Payment Zero Amount\n{\n  \"order_id\": 1,\n  \"amount\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "\n\n## POST - Create Payment Zero Amount\n\nPurpose:\n\nVerify zero amount payment is rejected.\n\nChecks:\n\n- Validation error returned\n\nExpected:\n\n400 / 422"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Missing Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Customer not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Saisha Pattanayak\",\n\t\"email\": \"saisha.pattanayak@gmail.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers",
+                "999"
+              ]
+            },
+            "description": "## GET - Get Missing Customer\n\nPurpose:\n\nVerify missing customer returns proper error.\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Missing Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Product not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/9999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "9999"
+              ]
+            },
+            "description": "## GET - Get Missing Product\n\nPurpose:\n\nVerify missing product returns proper error.\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Missing Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Order not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/9087643",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "9087643"
+              ]
+            },
+            "description": "## GET - Get Missing Order\n\nPurpose:\n\nVerify missing order returns proper error.\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Missing Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", ()=> {",
+                  "\tpm.response.to.have.status(404); //check if the status code is 422",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000); //check if the response time is less than 1000ms",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json; //check if the response is JSON",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json(); //parse the response body as JSON",
+                  "}",
+                  "pm.test(\"Error message is correct\", ()=> {",
+                  "\tpm.expect(jsonData.detail).to.includes(\"Payment record not found.\")",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 103,\n  \"amount\": 11729.1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/98797",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "98797"
+              ]
+            },
+            "description": "## GET - Get Missing Payment\n\nPurpose:\n\nVerify missing payment returns proper error.\n\nExpected:\n\n404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - End to End Chained Flow",
+      "item": [
+        {
+          "name": "GET - Root Health Check Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", () => {",
+                  "\tpm.response.to.have.responseTime.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData=pm.response.json();\t",
+                  "}",
+                  "pm.test(\"Response body is not empty\", () => {",
+                  "\tpm.expect(pm.response.text()).to.not.be.empty;",
+                  "})",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "## GET - Root Health Check\n\nPurpose:\n\nVerify API server is running and reachable.\n\nChecks:\n\n- Endpoint responds successfully\n\n- Status code is 200\n\n- Response body returned\n\n- Acceptable response time\n\nExpected:\n\n200 OK"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Customer Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "const jsonData = pm.response.json();",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "})",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.response.to.have.responseTime.below(1000);",
+                  "})",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json",
+                  "})",
+                  "pm.test(\"Customer ID generated\",()=> {",
+                  "\tpm.expect(jsonData.id).to.be.not.null;",
+                  "\tpm.expect(jsonData.id).to.be.a(\"number\");",
+                  "})",
+                  "pm.test(\"Customer name is correct\",()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "})",
+                  "pm.test(\"Customer email is correct\",()=> {",
+                  "\tpm.expect(jsonData.email).to.eql(requestBody.email);",
+                  "})",
+                  "pm.environment.set(\"customer_id\", jsonData.id);",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Newman Test Customer {{$timestamp}}\",\n  \"email\": \"newman.customer.{{$timestamp}}@test.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "## POST - Create Customer\n\nPurpose:\n\nCreate a new customer record required for order placement.\n\nChecks:\n\n- Customer created successfully\n\n- Status code is 201\n\n- Unique customer ID generated\n\n- Name and email saved correctly\n\n- Response JSON structure valid\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Product Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw)",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\",()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"name\");",
+                  "\tpm.expect(jsonData).to.have.property(\"price\");",
+                  "\tpm.expect(jsonData).to.have.property(\"stock\");",
+                  "\tpm.expect(jsonData).to.have.property(\"created_at\");",
+                  "});",
+                  "pm.test(\"Product data is correct\", ()=> {",
+                  "\tpm.expect(jsonData.name).to.eql(requestBody.name);",
+                  "\tpm.expect(jsonData.price).to.eql(requestBody.price);",
+                  "\tpm.expect(jsonData.stock).to.eql(requestBody.stock);",
+                  "});",
+                  "pm.environment.set(\"product_id\", jsonData.id);",
+                  "pm.environment.set(\"price\", jsonData.price);",
+                  "pm.environment.set(\"stock\", jsonData.stock);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Newman Test Product {{$timestamp}}\",\n  \"price\": 25.50,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "description": "## POST - Create Product\n\nPurpose:\n\nCreate a product available for ordering.\n\nChecks:\n\n- Product created successfully\n\n- Status code is 201\n\n- Product ID generated\n\n- Price and stock stored correctly\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw)",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Order created successfully with all required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"customer_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData).to.have.property(\"total_amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"items\");",
+                  "\tpm.expect(jsonData.items).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Order id is created and is a number\", ()=> {",
+                  "\tpm.expect(jsonData.order_id).to.be.not.null;",
+                  "\tpm.expect(jsonData.order_id).to.be.a(\"number\");",
+                  "});",
+                  "pm.test(\"Customer id is correct\", ()=> {",
+                  "\tpm.expect(jsonData.customer_id).to.eql(requestBody.customer_id)",
+                  "});",
+                  "pm.test(\"Order status is pending\", ()=> {",
+                  "\tpm.expect(jsonData.status).to.eql(\"pending\");",
+                  "});",
+                  "pm.test(\"Total amount is calculated correctly\", ()=> {",
+                  "\tlet total=0;",
+                  "\tjsonData.items.forEach(item => {",
+                  "\t\tlet subtotal = item.quantity * item.price;",
+                  "\t\ttotal += item.subtotal;",
+                  "\t});",
+                  "\tpm.expect(total).to.eql(jsonData.total_amount);",
+                  "});",
+                  "pm.environment.set(\"order_id\", jsonData.order_id)",
+                  "pm.environment.set(\"order_total\",jsonData.total_amount)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{customer_id}},\n  \"items\": [\n    {\n      \"product_id\": {{product_id}},\n      \"quantity\": {{order_quantity}}\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "## POST - Create Order\n\nPurpose:\n\nCreate customer order with one or more items.\n\nChecks:\n\n- Order created successfully\n\n- Order items created\n\n- Total amount calculated correctly\n\n- Stock reduced correctly\n\n- Order status correct\n\nExpected:\n\n201 Created"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Order By ID Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is below 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"customer_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData).to.have.property(\"total_amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"items\");",
+                  "\tpm.expect(jsonData.items).to.be.an(\"array\");",
+                  "\tpm.expect(jsonData.items.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "## GET - Get Order By ID\n\nPurpose:\n\nRetrieve complete order details.\n\nChecks:\n\n- Order header returned\n\n- Items list returned\n\n- Total amount matches order data\n\n- Missing order handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Successful Payment Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "pm.test(\"Status code is 201\", ()=> {",
+                  "\tpm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"payment_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData.status).to.eql(\"paid\");",
+                  "});",
+                  "pm.environment.set(\"payment_id\", jsonData.payment_id);",
+                  "pm.test(\"Debug payment_id value\", () => {",
+                  "    console.log(\"payment_id from response:\", jsonData.payment_id);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": {{order_id}},\n  \"amount\": {{order_total}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "## POST - Create Successful Payment\n\nPurpose:\n\nProcess payment for valid pending order.\n\nChecks:\n\n- Payment created successfully\n\n- Payment status marked paid\n\n- Order marked completed\n\n- Amount matches order total\n\nExpected:\n\n201 Created / 200 OK"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Payment By ID Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData;",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"payment_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/{{payment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "{{payment_id}}"
+              ]
+            },
+            "description": "## GET - Get Payment By ID\n\nPurpose:\n\nRetrieve payment details by payment ID.\n\nChecks:\n\n- Existing payment returned\n\n- Correct fields returned\n\n- Missing payment handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Order By ID Copy 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", ()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is below 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", ()=> {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-type\").includes(\"application/json\")){",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property(\"order_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"customer_id\");",
+                  "\tpm.expect(jsonData).to.have.property(\"status\");",
+                  "\tpm.expect(jsonData).to.have.property(\"total_amount\");",
+                  "\tpm.expect(jsonData).to.have.property(\"items\");",
+                  "\tpm.expect(jsonData.items).to.be.an(\"array\");",
+                  "\tpm.expect(jsonData.items.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "## GET - Get Order By ID\n\nPurpose:\n\nRetrieve complete order details.\n\nChecks:\n\n- Order header returned\n\n- Items list returned\n\n- Total amount matches order data\n\n- Missing order handled correctly\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Get Product By ID Copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\",()=> {",
+                  "\tpm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is less than 1000ms\", ()=> {",
+                  "\tpm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});",
+                  "pm.test(\"Response is JSON\", () => {",
+                  "\tpm.response.to.be.json;",
+                  "});",
+                  "let jsonData",
+                  "if(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")) {",
+                  "\tjsonData = pm.response.json();",
+                  "}",
+                  "pm.test(\"Response have all the required fields\", ()=> {",
+                  "\tpm.expect(jsonData).to.have.property('id');",
+                  "\tpm.expect(jsonData).to.have.property('name');",
+                  "\tpm.expect(jsonData).to.have.property('price');",
+                  "\tpm.expect(jsonData).to.have.property('stock');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}"
+              ]
+            },
+            "description": "## GET - Get Product By ID\n\nPurpose:\n\nRetrieve product details using product ID.\n\nChecks:\n\n- Existing product returns data\n\n- Product fields correct\n\n- Missing product returns error\n\nExpected:\n\n200 OK or 404 Not Found"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "order_quantity",
+      "value": ""
+    }
+  ]
+}
