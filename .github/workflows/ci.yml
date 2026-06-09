@@ -1,0 +1,15 @@
+name: First GitHub Action
+
+on:
+  push:
+
+jobs:
+  first-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get project code
+        uses: actions/checkout@v4
+
+      - name: Say hello
+        run: echo "Hello QA - GitHub Actions is working"
