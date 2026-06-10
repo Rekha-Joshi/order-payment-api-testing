@@ -22,6 +22,9 @@ jobs:
 
       - name: Verify Python
         run: python --version
-        
+
       - name: Install Dependencies
         run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest
