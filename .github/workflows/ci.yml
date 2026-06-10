@@ -25,6 +25,15 @@ jobs:
 
       - name: Install Dependencies
         run: pip install -r requirements.txt
+      
+      - name: Verify Node
+        run: node --version
+      
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Verify Newman
+        run: newman --version
 
       - name: Run pytest
         run: pytest
