@@ -44,7 +44,7 @@ def test_get_customer_success(client, created_customer):
     assert data["name"] == created_customer["name"]
     assert data["email"] == created_customer["email"]
 
-def test_customer_not_found(client):
+def test_get_customer_not_found(client):
     response = client.get("/customers/99999")
 
     assert response.status_code == 404
