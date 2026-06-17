@@ -2,7 +2,7 @@ name: First GitHub Action #workflow name which is published in github
 
 on:
   #push: #This is the trigger
-  workflow_dispatch:
+  workflow_dispatch: #it will run only when you manually click Run workflow in GitHub
 
 jobs:
   first-check: # this is just the job name. Could be anything. Different jobs can run independently.
