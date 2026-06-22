@@ -35,7 +35,7 @@ def product_data():
     return {
         "name": name,
         "price": round(fake.random.uniform(10,500),2),
-        "stock": fake.random_int(min=1, max=10)
+        "stock": fake.random_int(min=3, max=10)
     }
 
 @pytest.fixture
@@ -43,6 +43,31 @@ def created_product(client, product_data):
     response = client.post(
         "/products",
         json=product_data
+    )
+    assert response.status_code == 201
+    return response.json()
+
+@pytest.fixture
+def order_data(created_customer, created_product):
+    quantity = 2
+    return{
+        "request": {
+            "customer_id":created_customer["id"],
+            "items":[
+                {
+                    "product_id":created_product["id"],
+                    "quantity":2
+                }
+            ]
+        },
+        "expected_total":created_product["price"] * quantity
+    }
+
+@pytest.fixture
+def created_order(client, order_data):
+    response = client.post(
+        "/orders",
+        json=order_data["request"]
     )
     assert response.status_code == 201
     return response.json()
